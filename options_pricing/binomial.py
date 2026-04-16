@@ -79,8 +79,8 @@ def american_option_price(S, K, T, r, q, sigma, option_type, n_steps=200):
     u = math.exp(sigma * math.sqrt(dt))
     d = 1.0 / u
 
-    # Risk-neutral probability adjusted for dividend yield
-    p = (math.exp((r - q) * dt) - d) / (u - d)
+    # Risk-neutral probability
+    p = (math.exp(r * dt) - d) / (u - d)
 
     # Discount factor per time step
     disc = math.exp(-(r - q) * dt)
