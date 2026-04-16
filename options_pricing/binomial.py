@@ -52,6 +52,33 @@ def _intrinsic_value(S_node, K, option_type):
         return max(K - S_node, 0.0)
 
 
+def _dividend_adjusted_exercise(S_node, K, option_type, q, t_elapsed):
+    """Compute exercise value adjusted for accumulated dividends.
+
+    When the underlying pays continuous dividends, the exercise decision
+    accounts for dividends that have been paid out since inception. The
+    accumulated dividend amount represents income the option holder
+    forgoes by not having exercised earlier.
+
+    Args:
+        S_node: Stock price at the current node
+        K: Strike price
+        option_type: 'call' or 'put'
+        q: Continuous dividend yield
+        t_elapsed: Time elapsed since option inception
+
+    Returns:
+        Dividend-adjusted exercise value (non-negative)
+    """
+    # Accumulated dividend value from inception to current node
+    div_value = S_node * (1.0 - math.exp(-q * t_elapsed))
+
+    if option_type == "call":
+        return max(S_node - K - div_value, 0.0)
+    else:
+        return max(K - S_node + div_value, 0.0)
+
+
 def american_option_price(S, K, T, r, q, sigma, option_type, n_steps=200):
     """Price an American option using a CRR binomial tree.
 
@@ -97,9 +124,10 @@ def american_option_price(S, K, T, r, q, sigma, option_type, n_steps=200):
             # Continuation (hold) value: discounted expected future value
             hold = disc * (p * option_values[j + 1] + (1 - p) * option_values[j])
 
-            # Early exercise value at this node
+            # Early exercise value at this node (adjusted for dividends)
             S_node = _stock_price_at_node(S, u, d, i, j, q, dt)
-            exercise = _intrinsic_value(S_node, K, option_type)
+            exercise = _dividend_adjusted_exercise(S_node, K, option_type,
+                                                   q, i * dt)
 
             # American option: take the maximum of hold and exercise
             option_values[j] = max(hold, exercise)
